@@ -22,7 +22,6 @@ public final class MountInequalities extends JavaPlugin implements Listener, Com
     @Override
     public void onEnable() {
         saveDefaultConfig();
-        //
         zoneManager = new ZoneManager(this);
         PluginCommand cmd = getCommand("mountain");
         if (cmd != null) {
@@ -107,7 +106,7 @@ public final class MountInequalities extends JavaPlugin implements Listener, Com
         if (player.isOp()) return;
 
         Location to = event.getTo();
-        if (to == null || !to.getWorld().getName().equals("world")) return;
+        if (!to.getWorld().getName().equals("world")) return;
 
         Zone zone = zoneManager.getZoneContaining(to);
         if (zone == null) return;
@@ -116,7 +115,7 @@ public final class MountInequalities extends JavaPlugin implements Listener, Com
 
         Vector knockback = to.toVector().subtract(zone.getCenter().toVector()).normalize().setY(0.5).multiply(1.5);
         player.setVelocity(knockback);
-        player.sendActionBar(Component.text("Вы не прошли достаточно заданий, чтобы пройти").color(NamedTextColor.RED));
+        player.sendActionBar(Component.text("Недостаточно поинтов для доступа").color(NamedTextColor.RED));
         player.playSound(player.getLocation(), Sound.BLOCK_NOTE_BLOCK_DIDGERIDOO, 0.1f, 1);
     }
 
