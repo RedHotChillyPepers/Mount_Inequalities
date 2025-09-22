@@ -1,0 +1,9 @@
+name: MountInequalities
+version: '${project.version}'
+main: neison.mountinequalities.MountInequalities
+api-version: '1.21'
+authors: [Neison_]
+description: Плагин сервера §4§l2-Life
+commands:
+  mountain:
+    permission: plugin.mountinequalities

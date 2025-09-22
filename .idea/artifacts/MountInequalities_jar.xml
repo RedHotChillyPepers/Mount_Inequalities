@@ -1,0 +1,8 @@
+<component name="ArtifactManager">
+  <artifact type="jar" name="MountInequalities:jar">
+    <output-path>$PROJECT_DIR$/../../Server/plugins</output-path>
+    <root id="archive" name="MountInequalities.jar">
+      <element id="module-output" name="MountInequalities" />
+    </root>
+  </artifact>
+</component>
