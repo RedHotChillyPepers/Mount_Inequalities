@@ -1,12 +1,14 @@
 package neison.mountinequalities;
 
 import net.kyori.adventure.text.format.NamedTextColor;
+import net.milkbowl.vault.economy.Economy;
 import org.bukkit.*;
 import org.bukkit.command.*;
 import org.bukkit.entity.Player;
 import org.bukkit.event.*;
 import org.bukkit.event.block.*;
 import org.bukkit.event.player.*;
+import org.bukkit.plugin.RegisteredServiceProvider;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.scheduler.BukkitRunnable;
 import org.bukkit.util.Vector;
@@ -16,11 +18,19 @@ import java.util.*;
 
 public final class MountInequalities extends JavaPlugin implements Listener, CommandExecutor {
 
+    private static final String WORLD_NAME = "lobby";
+    private static Economy econ = null;
     public ZoneManager zoneManager;
     public final Map<UUID, Long> zoneEntryTime = new HashMap<>();
 
     @Override
     public void onEnable() {
+        if (!setupEconomy()) {
+            getLogger().severe(String.format("[%s] - Disabled due to no Vault dependency found!", getDescription().getName()));
+            getServer().getPluginManager().disablePlugin(this);
+            return;
+        }
+
         saveDefaultConfig();
         zoneManager = new ZoneManager(this);
         PluginCommand cmd = getCommand("mountain");
@@ -62,6 +72,18 @@ public final class MountInequalities extends JavaPlugin implements Listener, Com
 
     }
 
+    private boolean setupEconomy() {
+        if (getServer().getPluginManager().getPlugin("Vault") == null) {
+            return false;
+        }
+        RegisteredServiceProvider<Economy> rsp = getServer().getServicesManager().getRegistration(Economy.class);
+        if (rsp == null) {
+            return false;
+        }
+        econ = rsp.getProvider();
+        return econ != null;
+    }
+
     @Override
     public List<String> onTabComplete(CommandSender sender, Command command, String alias, String[] args) {
         return List.of();
@@ -86,7 +108,7 @@ public final class MountInequalities extends JavaPlugin implements Listener, Com
                     Double.parseDouble(args[4]),
                     Double.parseDouble(args[5]));
 
-            if (!loc1.getWorld().getName().equals("world")) {
+            if (!loc1.getWorld().getName().equals(WORLD_NAME)) {
                 player.sendMessage(Component.text("Зоны можно создавать только в верхнем мире").color(NamedTextColor.RED));
                 return true;
             }
@@ -106,17 +128,21 @@ public final class MountInequalities extends JavaPlugin implements Listener, Com
         if (player.isOp()) return;
 
         Location to = event.getTo();
-        if (!to.getWorld().getName().equals("world")) return;
+        if (!to.getWorld().getName().equals(WORLD_NAME)) return;
 
         Zone zone = zoneManager.getZoneContaining(to);
         if (zone == null) return;
 
-        player.leaveVehicle();
+        double balance = econ.getBalance(player);
 
-        Vector knockback = to.toVector().subtract(zone.getCenter().toVector()).normalize().setY(0.5).multiply(1.5);
-        player.setVelocity(knockback);
-        player.sendActionBar(Component.text("Недостаточно поинтов для доступа").color(NamedTextColor.RED));
-        player.playSound(player.getLocation(), Sound.BLOCK_NOTE_BLOCK_DIDGERIDOO, 0.1f, 1);
+        if (balance < 5000) {
+            player.leaveVehicle();
+
+            Vector knockback = to.toVector().subtract(zone.getCenter().toVector()).normalize().setY(0.5).multiply(1.5);
+            player.setVelocity(knockback);
+            player.sendActionBar(Component.text("Недостаточно поинтов для доступа").color(NamedTextColor.RED));
+            player.playSound(player.getLocation(), Sound.BLOCK_NOTE_BLOCK_DIDGERIDOO, 0.1f, 1);
+        }
     }
 
     @EventHandler
@@ -126,10 +152,10 @@ public final class MountInequalities extends JavaPlugin implements Listener, Com
 
         Location to = event.getTo();
         Location from = event.getFrom();
-        if (to == null || from == null || !to.getWorld().getName().equals("world")) return;
+        if (!to.getWorld().getName().equals(WORLD_NAME)) return;
 
         if (zoneManager.isInZone(to)) {
-            if (event.getCause() == PlayerTeleportEvent.TeleportCause.CHORUS_FRUIT) {
+            if (event.getCause() == PlayerTeleportEvent.TeleportCause.CONSUMABLE_EFFECT) {
                 event.setCancelled(true);
                 player.teleport(from);
             } else if (event.getCause() == PlayerTeleportEvent.TeleportCause.ENDER_PEARL) {
@@ -175,12 +201,12 @@ public final class MountInequalities extends JavaPlugin implements Listener, Com
         }
 
         public boolean isInZone(Location loc) {
-            if (!loc.getWorld().getName().equals("world")) return false;
+            if (!loc.getWorld().getName().equals(WORLD_NAME)) return false;
             return zones.stream().anyMatch(zone -> zone.contains(loc));
         }
 
         public Zone getZoneContaining(Location loc) {
-            if (!loc.getWorld().getName().equals("world")) return null;
+            if (!loc.getWorld().getName().equals(WORLD_NAME)) return null;
             return zones.stream().filter(zone -> zone.contains(loc)).findFirst().orElse(null);
         }
 
@@ -203,7 +229,7 @@ public final class MountInequalities extends JavaPlugin implements Listener, Com
         public void loadZones() {
             zones.clear();
             List<Map<?, ?>> zoneList = plugin.getConfig().getMapList("zones");
-            World world = Bukkit.getWorld("world");
+            World world = Bukkit.getWorld(WORLD_NAME);
             if (world == null) return;
 
             for (Map<?, ?> data : zoneList) {

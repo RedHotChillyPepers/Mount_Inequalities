@@ -1,0 +1,25 @@
+# Build artifacts
+target/
+build/
+*.jar
+*.zip
+
+# IDE specific files
+.idea/
+.vscode/
+*.iml
+*.ipr
+*.iws
+
+# Dependency caches
+.gradle/
+.m2/
+
+# Local configuration files
+plugins/
+logs/
+cache/
+temp/
+*.log
+*.yml
+config.yml
