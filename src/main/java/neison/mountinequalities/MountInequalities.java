@@ -22,6 +22,7 @@ public final class MountInequalities extends JavaPlugin implements Listener, Com
     @Override
     public void onEnable() {
         saveDefaultConfig();
+        //
         zoneManager = new ZoneManager(this);
         PluginCommand cmd = getCommand("mountain");
         if (cmd != null) {
